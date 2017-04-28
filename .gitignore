@@ -138,6 +138,6 @@ fabric.properties
 
 
 .DS_STORE
-input_json/*
+input_logs/*
 output_json/*
 weight_json/*
