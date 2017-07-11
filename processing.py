@@ -57,6 +57,7 @@ def main():
                     elif data["Event"] == "SparkListenerStageCompleted":
                         # print(data)
                         stage_id = data["Stage Info"]["Stage ID"]
+                        stage_dict[stage_id]["durationreal"] = data["Stage Info"]["Completion Time"] - data["Stage Info"]["Submission Time"]
                         stage_dict[stage_id]["numtask"] = data["Stage Info"]['Number of Tasks']
                         for acc in data["Stage Info"]["Accumulables"]:
                             if acc["Name"] == "internal.metrics.executorRunTime":
