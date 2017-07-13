@@ -57,12 +57,12 @@ def main():
                     elif data["Event"] == "SparkListenerStageCompleted":
                         # print(data)
                         stage_id = data["Stage Info"]["Stage ID"]
-                        stage_dict[stage_id]["durationreal"] = data["Stage Info"]["Completion Time"] - data["Stage Info"]["Submission Time"]
+                        stage_dict[stage_id]["duration"] = data["Stage Info"]["Completion Time"] - data["Stage Info"]["Submission Time"]
+                        stage_dict[0]["totalduration"] += stage_dict[stage_id]["duration"]
                         stage_dict[stage_id]["numtask"] = data["Stage Info"]['Number of Tasks']
                         for acc in data["Stage Info"]["Accumulables"]:
                             if acc["Name"] == "internal.metrics.executorRunTime":
-                                stage_dict[stage_id]["duration"] = int(acc["Value"])
-                                stage_dict[0]["totalduration"] += int(acc["Value"])
+                                stage_dict[stage_id]["durationmonocore"] = int(acc["Value"])
                             if acc["Name"] == "internal.metrics.input.recordsRead":
                                 stage_dict[stage_id]["recordsread"] = acc["Value"]
                             if acc["Name"] == "internal.metrics.shuffle.read.recordsRead":
@@ -185,21 +185,21 @@ def main():
                     parent_input += stage_dict[parent_id]["shufflerecordsread"]
                 if parent_output != 0:
                     stage_dict[stage_id]["nominalrate"] = parent_output / (
-                        stage_dict[stage_id]["duration"] / 1000.0)
+                        stage_dict[stage_id]["durationmonocore"] / 1000.0)
                 elif parent_input != 0:
                     stage_dict[stage_id]["nominalrate"] = parent_input / (
-                        stage_dict[stage_id]["duration"] / 1000.0)
+                        stage_dict[stage_id]["durationmonocore"] / 1000.0)
                 else:
                     stage_input = stage_dict[stage_id]["recordsread"] + stage_dict[stage_id][
                         "shufflerecordsread"]
                     if stage_input != 0 and stage_input != stage_dict[stage_id]["numtask"]:
                         stage_dict[stage_id]["nominalrate"] = stage_input / (
-                            stage_dict[stage_id]["duration"] / 1000.0)
+                            stage_dict[stage_id]["durationmonocore"] / 1000.0)
                     else:
                         stage_output = stage_dict[stage_id]["recordswrite"] + stage_dict[stage_id][
                             "shufflerecordswrite"]
                         stage_dict[stage_id]["nominalrate"] = stage_input / (
-                            stage_dict[stage_id]["duration"] / 1000.0)
+                            stage_dict[stage_id]["durationmonocore"] / 1000.0)
                 if stage_dict[stage_id]["nominalrate"] == 0.0:
                     stage_dict[stage_id]["genstage"] = True
 
@@ -208,8 +208,8 @@ def main():
             if key not in skipped:
                 old_weight = stage_dict[key]["weight"]
                 stage_dict[key]["weight"] = np.mean(
-                    [old_weight, totalduration / stage_dict[key]["duration"]])
-                totalduration -= stage_dict[key]["duration"]
+                    [old_weight, totalduration / stage_dict[key]["durationmonocore"]])
+                totalduration -= stage_dict[key]["durationmonocore"]
 
         # Create json output
         with open("./output_json/" + re.sub("[^a-zA-Z0-9.-]", "_", app_name)+"_"+log.split("-")[1]+ ".json",
