@@ -9,6 +9,8 @@ import numpy as np
 
 def main():
     for log in glob.glob("./input_logs/app-*"):
+        start = 0
+        end = 0
         app_name = ""
         # Build stage dictionary
         stage_dict = OrderedDict()
@@ -34,6 +36,7 @@ def main():
                             stage_dict[stage_id] = {}
                             if stage_id == 0:
                                 stage_dict[0]["totalduration"] = 0
+                                stage_dict[0]["totaldurationreal"] = 0
                             stage_dict[stage_id]["name"] = stage['Stage Name']
                             stage_dict[stage_id]["genstage"] = False
                             stage_dict[stage_id]["parentsIds"] = stage["Parent IDs"]
@@ -71,8 +74,17 @@ def main():
                                 stage_dict[stage_id]["recordswrite"] = acc["Value"]
                             if acc["Name"] == "internal.metrics.shuffle.write.recordsWritten":
                                 stage_dict[stage_id]["shufflerecordswrite"] = acc["Value"]
+                    elif start == 0 and data["Event"] == "SparkListenerTaskStart":
+                        start = data["Task Info"]["Launch Time"]
+                    elif data["Event"] == "SparkListenerTaskEnd":
+                        time = data["Task Info"]["Finish Time"]
+                        if time > end:
+                            end = time
+
                 except KeyError:
                     print(data)
+
+        stage_dict[0]["totaldurationreal"] = end - start
 
         skipped = []
         if ".bz" in log:
